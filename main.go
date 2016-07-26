@@ -30,17 +30,17 @@ func main() {
 		panic(err)
 	}
 
-	var allEC2Instances []*ec2.Instance
+	var runningEC2Instances []*ec2.Instance
 
 	// instanceResp has all of the response data, pull out instance IDs:
 	fmt.Println("> Number of reservation sets: ", len(instanceResp.Reservations))
 	for idx, _ := range instanceResp.Reservations {
 		for _, inst := range instanceResp.Reservations[idx].Instances {
-			allEC2Instances = append(allEC2Instances, inst)
+			runningEC2Instances = append(runningEC2Instances, inst)
 		}
 	}
 
-	for _, instance := range allEC2Instances {
+	for _, instance := range runningEC2Instances {
 		fmt.Printf(" Instance ID: %v, state: %v\n", *instance.InstanceId, *instance.State.Name)
 	}
 
@@ -60,9 +60,9 @@ func main() {
 		panic(err)
 	}
 
-	allReservedInstances := reservedResp.ReservedInstances
+	activeReservedInstances := reservedResp.ReservedInstances
 
-	for _, instance := range allReservedInstances {
+	for _, instance := range activeReservedInstances {
 		fmt.Printf(" ReservedInstances ID: %v\n", *instance.ReservedInstancesId)
 	}
 
