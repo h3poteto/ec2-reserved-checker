@@ -10,9 +10,26 @@ import (
 )
 
 func main() {
+
+	instances, reservedInstances, err := EC2InstancesAndReservedInstances()
+	if err != nil {
+		panic(err)
+	}
+	for _, inst := range instances {
+		fmt.Printf("EC2 Instance ID: %v\n", *inst.InstanceId)
+	}
+
+	for _, inst := range reservedInstances {
+		fmt.Printf("Reserved Instance ID: %v\n", *inst.ReservedInstancesId)
+	}
+
+}
+
+func EC2InstancesAndReservedInstances() ([]*ec2.Instance, []*ec2.ReservedInstances, error) {
 	region := os.Getenv("AWS_REGION")
 	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(region)})
 
+	// Get running instances
 	instancesParams := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
@@ -27,23 +44,19 @@ func main() {
 	// Call the DescribeInstances Operation
 	instanceResp, err := svc.DescribeInstances(instancesParams)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	var runningEC2Instances []*ec2.Instance
 
 	// instanceResp has all of the response data, pull out instance IDs:
-	fmt.Println("> Number of reservation sets: ", len(instanceResp.Reservations))
 	for idx, _ := range instanceResp.Reservations {
 		for _, inst := range instanceResp.Reservations[idx].Instances {
 			runningEC2Instances = append(runningEC2Instances, inst)
 		}
 	}
 
-	for _, instance := range runningEC2Instances {
-		fmt.Printf(" Instance ID: %v, state: %v\n", *instance.InstanceId, *instance.State.Name)
-	}
-
+	// Get active reserved instances
 	reservedParams := &ec2.DescribeReservedInstancesInput{
 		Filters: []*ec2.Filter{
 			{
@@ -55,15 +68,13 @@ func main() {
 		},
 	}
 
+	// Call the DescribeReservedInstances Operation
 	reservedResp, err := svc.DescribeReservedInstances(reservedParams)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	activeReservedInstances := reservedResp.ReservedInstances
 
-	for _, instance := range activeReservedInstances {
-		fmt.Printf(" ReservedInstances ID: %v\n", *instance.ReservedInstancesId)
-	}
-
+	return runningEC2Instances, activeReservedInstances, nil
 }
