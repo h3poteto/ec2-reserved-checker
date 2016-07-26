@@ -15,10 +15,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("----------------------------------------------")
+	fmt.Printf(" There are %v running EC2 instances\n", len(instances))
+	fmt.Println("----------------------------------------------")
+
 	for _, inst := range instances {
 		fmt.Printf("EC2 Instance ID: %v\n", *inst.InstanceId)
 	}
 
+	fmt.Println("----------------------------------------------")
+	fmt.Printf("There are %v active Reserved instances\n", len(reservedInstances))
+	fmt.Println("----------------------------------------------")
 	for _, inst := range reservedInstances {
 		fmt.Printf("Reserved Instance ID: %v\n", *inst.ReservedInstancesId)
 	}
