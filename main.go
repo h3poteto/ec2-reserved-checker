@@ -9,6 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
+type FlattenReservedInstances struct {
+	Reserved *ec2.ReservedInstances
+	Index    int
+}
+
 func main() {
 
 	instances, reservedInstances, err := EC2InstancesAndReservedInstances()
@@ -32,16 +37,16 @@ func main() {
 	}
 
 	reservedAppliedInstances := make([]*ec2.Instance, 0)
-	relatedReservedInstances := make([]*ec2.ReservedInstances, 0)
+	relatedReservedInstances := make([]*FlattenReservedInstances, 0)
 
 	flattenReservedInstances := flattenReservedInstances(reservedInstances)
 
 	// reserved instances which related to EC2 instances
-	for _, ri := range flattenReservedInstances {
+	for _, flatten := range flattenReservedInstances {
 		for _, inst := range instances {
-			if *ri.AvailabilityZone == *inst.Placement.AvailabilityZone && *ri.InstanceType == *inst.InstanceType {
+			if *flatten.Reserved.AvailabilityZone == *inst.Placement.AvailabilityZone && *flatten.Reserved.InstanceType == *inst.InstanceType {
 				reservedAppliedInstances = append(reservedAppliedInstances, inst)
-				relatedReservedInstances = append(relatedReservedInstances, ri)
+				relatedReservedInstances = append(relatedReservedInstances, flatten)
 			}
 		}
 	}
@@ -49,7 +54,7 @@ func main() {
 	// We need ondemand instances which are not applied reserved,
 	// and reserved instances which are not related running EC2 instances.
 	reservedNotAppliedInstances := make([]*ec2.Instance, 0)
-	unusedReservedInstances := make([]*ec2.ReservedInstances, 0)
+	unusedReservedInstances := make([]*FlattenReservedInstances, 0)
 
 	for _, inst := range instances {
 		applied := false
@@ -64,6 +69,19 @@ func main() {
 		}
 	}
 
+	for _, reserved := range flattenReservedInstances {
+		related := false
+		for _, relatedReserved := range relatedReservedInstances {
+			if reserved.Index == relatedReserved.Index {
+				related = true
+				break
+			}
+		}
+		if !related {
+			unusedReservedInstances = append(unusedReservedInstances, reserved)
+		}
+	}
+
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
 	fmt.Println("----------------------------------------------")
@@ -74,6 +92,9 @@ func main() {
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v Reserved Instances which are not related running EC2 instances\n", len(unusedReservedInstances))
 	fmt.Println("----------------------------------------------")
+	for _, inst := range unusedReservedInstances {
+		fmt.Printf("Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *inst.Reserved.ReservedInstancesId, *inst.Reserved.AvailabilityZone, *inst.Reserved.InstanceType)
+	}
 }
 
 // EC2InstancesAndReservedInstances get running EC2 Instances and active Reserved Instances
@@ -131,12 +152,22 @@ func EC2InstancesAndReservedInstances() ([]*ec2.Instance, []*ec2.ReservedInstanc
 	return runningEC2Instances, activeReservedInstances, nil
 }
 
-func flattenReservedInstances(reservedInstances []*ec2.ReservedInstances) []*ec2.ReservedInstances {
-	ri := make([]*ec2.ReservedInstances, 0)
+func flattenReservedInstances(reservedInstances []*ec2.ReservedInstances) []*FlattenReservedInstances {
+	flattenReserved := make([]*FlattenReservedInstances, 0)
+	instances := make([]*ec2.ReservedInstances, 0)
 	for _, inst := range reservedInstances {
 		for i := 0; i < int(*inst.InstanceCount); i++ {
-			ri = append(ri, inst)
+			instances = append(instances, inst)
 		}
 	}
-	return ri
+
+	for i, inst := range instances {
+		flatten := &FlattenReservedInstances{
+			Reserved: inst,
+			Index:    i,
+		}
+		flattenReserved = append(flattenReserved, flatten)
+	}
+
+	return flattenReserved
 }
