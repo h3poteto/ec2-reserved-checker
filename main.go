@@ -26,15 +26,17 @@ func main() {
 	fmt.Println("----------------------------------------------")
 
 	for _, inst := range instances {
-		fmt.Printf("EC2 Instance ID: %v\n", *inst.InstanceId)
+		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *inst.InstanceId, *inst.Placement.AvailabilityZone, *inst.InstanceType)
 	}
+	fmt.Println("")
 
 	fmt.Println("----------------------------------------------")
 	fmt.Printf("There are %v active Reserved instances\n", len(reservedInstances))
 	fmt.Println("----------------------------------------------")
 	for _, inst := range reservedInstances {
-		fmt.Printf("Reserved Instance ID: %v, number: %v\n", *inst.ReservedInstancesId, *inst.InstanceCount)
+		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: %v\n", *inst.ReservedInstancesId, *inst.AvailabilityZone, *inst.InstanceType, *inst.InstanceCount)
 	}
+	fmt.Println("")
 
 	reservedAppliedInstances := make([]*ec2.Instance, 0)
 	relatedReservedInstances := make([]*FlattenReservedInstances, 0)
@@ -86,15 +88,17 @@ func main() {
 	fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
 	fmt.Println("----------------------------------------------")
 	for _, inst := range reservedNotAppliedInstances {
-		fmt.Printf("EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *inst.InstanceId, *inst.Placement.AvailabilityZone, *inst.InstanceType)
+		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *inst.InstanceId, *inst.Placement.AvailabilityZone, *inst.InstanceType)
 	}
+	fmt.Println("")
 
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v Reserved Instances which are not related running EC2 instances\n", len(unusedReservedInstances))
 	fmt.Println("----------------------------------------------")
 	for _, inst := range unusedReservedInstances {
-		fmt.Printf("Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *inst.Reserved.ReservedInstancesId, *inst.Reserved.AvailabilityZone, *inst.Reserved.InstanceType)
+		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *inst.Reserved.ReservedInstancesId, *inst.Reserved.AvailabilityZone, *inst.Reserved.InstanceType)
 	}
+	fmt.Println("")
 }
 
 // EC2InstancesAndReservedInstances get running EC2 Instances and active Reserved Instances
