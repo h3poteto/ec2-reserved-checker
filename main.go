@@ -31,29 +31,49 @@ func main() {
 		fmt.Printf("Reserved Instance ID: %v, number: %v\n", *inst.ReservedInstancesId, *inst.InstanceCount)
 	}
 
-	_ = flattenReservedInstances(reservedInstances)
+	reservedAppliedInstances := make([]*ec2.Instance, 0)
+	relatedReservedInstances := make([]*ec2.ReservedInstances, 0)
 
-	// reservedAttachedInstances := make([]*ec2.Instance, len(instances))
-	// copy(unusedInstances, instances)
-	// usedReservedInstances := make([]*ec2.ReservedInstances, 0)
+	flattenReservedInstances := flattenReservedInstances(reservedInstances)
 
-	// // Need EC2 Instances which not related any active Reserved Instances
-	// //
-	// for _, ri := range reservedInstances {
-	// 	for i := 0; i < int(*ri.InstanceCount); i++ {
-	// 		for j, inst := range instances {
-	// 			if *ri.AvailabilityZone == *inst.Placement.AvailabilityZone && *ri.InstanceType == *inst.InstanceType {
-	// 				if j < (len(instances) - 1) {
-	// 					unusedInstances = append(unusedInstances[:j], unusedInstances[(j+1):]...)
-	// 				} else {
-	// 					unusedInstances = unusedInstances[:j]
-	// 				}
-	// 				usedReservedInstances = append(usedReservedInstances, ri)
-	// 				break
-	// 			}
-	// 		}
-	// 	}
-	// }
+	// reserved instances which related to EC2 instances
+	for _, ri := range flattenReservedInstances {
+		for _, inst := range instances {
+			if *ri.AvailabilityZone == *inst.Placement.AvailabilityZone && *ri.InstanceType == *inst.InstanceType {
+				reservedAppliedInstances = append(reservedAppliedInstances, inst)
+				relatedReservedInstances = append(relatedReservedInstances, ri)
+			}
+		}
+	}
+
+	// We need ondemand instances which are not applied reserved,
+	// and reserved instances which are not related running EC2 instances.
+	reservedNotAppliedInstances := make([]*ec2.Instance, 0)
+	unusedReservedInstances := make([]*ec2.ReservedInstances, 0)
+
+	for _, inst := range instances {
+		applied := false
+		for _, appliedInst := range reservedAppliedInstances {
+			if *inst.InstanceId == *appliedInst.InstanceId {
+				applied = true
+				break
+			}
+		}
+		if !applied {
+			reservedNotAppliedInstances = append(reservedNotAppliedInstances, inst)
+		}
+	}
+
+	fmt.Println("----------------------------------------------")
+	fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
+	fmt.Println("----------------------------------------------")
+	for _, inst := range reservedNotAppliedInstances {
+		fmt.Printf("EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *inst.InstanceId, *inst.Placement.AvailabilityZone, *inst.InstanceType)
+	}
+
+	fmt.Println("----------------------------------------------")
+	fmt.Printf(" There are %v Reserved Instances which are not related running EC2 instances\n", len(unusedReservedInstances))
+	fmt.Println("----------------------------------------------")
 }
 
 // EC2InstancesAndReservedInstances get running EC2 Instances and active Reserved Instances
