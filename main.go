@@ -15,6 +15,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v running EC2 instances\n", len(instances))
 	fmt.Println("----------------------------------------------")
@@ -30,8 +31,30 @@ func main() {
 		fmt.Printf("Reserved Instance ID: %v\n", *inst.ReservedInstancesId)
 	}
 
+	// reservedAttachedInstances := make([]*ec2.Instance, len(instances))
+	// copy(unusedInstances, instances)
+	// usedReservedInstances := make([]*ec2.ReservedInstances, 0)
+
+	// // Need EC2 Instances which not related any active Reserved Instances
+	// //
+	// for _, ri := range reservedInstances {
+	// 	for i := 0; i < int(*ri.InstanceCount); i++ {
+	// 		for j, inst := range instances {
+	// 			if *ri.AvailabilityZone == *inst.Placement.AvailabilityZone && *ri.InstanceType == *inst.InstanceType {
+	// 				if j < (len(instances) - 1) {
+	// 					unusedInstances = append(unusedInstances[:j], unusedInstances[(j+1):]...)
+	// 				} else {
+	// 					unusedInstances = unusedInstances[:j]
+	// 				}
+	// 				usedReservedInstances = append(usedReservedInstances, ri)
+	// 				break
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
+// EC2InstancesAndReservedInstances get running EC2 Instances and active Reserved Instances
 func EC2InstancesAndReservedInstances() ([]*ec2.Instance, []*ec2.ReservedInstances, error) {
 	region := os.Getenv("AWS_REGION")
 	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(region)})
