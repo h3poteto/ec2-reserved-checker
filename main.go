@@ -28,8 +28,10 @@ func main() {
 	fmt.Printf("There are %v active Reserved instances\n", len(reservedInstances))
 	fmt.Println("----------------------------------------------")
 	for _, inst := range reservedInstances {
-		fmt.Printf("Reserved Instance ID: %v\n", *inst.ReservedInstancesId)
+		fmt.Printf("Reserved Instance ID: %v, number: %v\n", *inst.ReservedInstancesId, *inst.InstanceCount)
 	}
+
+	_ = flattenReservedInstances(reservedInstances)
 
 	// reservedAttachedInstances := make([]*ec2.Instance, len(instances))
 	// copy(unusedInstances, instances)
@@ -107,4 +109,14 @@ func EC2InstancesAndReservedInstances() ([]*ec2.Instance, []*ec2.ReservedInstanc
 	activeReservedInstances := reservedResp.ReservedInstances
 
 	return runningEC2Instances, activeReservedInstances, nil
+}
+
+func flattenReservedInstances(reservedInstances []*ec2.ReservedInstances) []*ec2.ReservedInstances {
+	ri := make([]*ec2.ReservedInstances, 0)
+	for _, inst := range reservedInstances {
+		for i := 0; i < int(*inst.InstanceCount); i++ {
+			ri = append(ri, inst)
+		}
+	}
+	return ri
 }
