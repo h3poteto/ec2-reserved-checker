@@ -16,25 +16,25 @@ type FlattenReservedInstances struct {
 
 func main() {
 
-	instances, reservedInstances, err := EC2InstancesAndReservedInstances()
+	runningInstances, reservedInstances, err := EC2InstancesAndReservedInstances()
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("----------------------------------------------")
-	fmt.Printf(" There are %v running EC2 instances\n", len(instances))
+	fmt.Printf(" There are %v running EC2 instances\n", len(runningInstances))
 	fmt.Println("----------------------------------------------")
 
-	for _, inst := range instances {
-		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *inst.InstanceId, *inst.Placement.AvailabilityZone, *inst.InstanceType)
+	for _, instance := range runningInstances {
+		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *instance.InstanceId, *instance.Placement.AvailabilityZone, *instance.InstanceType)
 	}
 	fmt.Println("")
 
 	fmt.Println("----------------------------------------------")
 	fmt.Printf("There are %v active Reserved instances\n", len(reservedInstances))
 	fmt.Println("----------------------------------------------")
-	for _, inst := range reservedInstances {
-		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: %v\n", *inst.ReservedInstancesId, *inst.AvailabilityZone, *inst.InstanceType, *inst.InstanceCount)
+	for _, reserved := range reservedInstances {
+		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: %v\n", *reserved.ReservedInstancesId, *reserved.AvailabilityZone, *reserved.InstanceType, *reserved.InstanceCount)
 	}
 	fmt.Println("")
 
@@ -44,11 +44,11 @@ func main() {
 	flattenReservedInstances := flattenReservedInstances(reservedInstances)
 
 	// reserved instances which related to EC2 instances
-	for _, flatten := range flattenReservedInstances {
-		for _, inst := range instances {
-			if *flatten.Reserved.AvailabilityZone == *inst.Placement.AvailabilityZone && *flatten.Reserved.InstanceType == *inst.InstanceType {
-				reservedAppliedInstances = append(reservedAppliedInstances, inst)
-				relatedReservedInstances = append(relatedReservedInstances, flatten)
+	for _, flattenReserved := range flattenReservedInstances {
+		for _, instance := range runningInstances {
+			if *flattenReserved.Reserved.AvailabilityZone == *instance.Placement.AvailabilityZone && *flattenReserved.Reserved.InstanceType == *instance.InstanceType {
+				reservedAppliedInstances = append(reservedAppliedInstances, instance)
+				relatedReservedInstances = append(relatedReservedInstances, flattenReserved)
 			}
 		}
 	}
@@ -58,45 +58,45 @@ func main() {
 	reservedNotAppliedInstances := make([]*ec2.Instance, 0)
 	unusedReservedInstances := make([]*FlattenReservedInstances, 0)
 
-	for _, inst := range instances {
+	for _, instance := range runningInstances {
 		applied := false
 		for _, appliedInst := range reservedAppliedInstances {
-			if *inst.InstanceId == *appliedInst.InstanceId {
+			if *instance.InstanceId == *appliedInst.InstanceId {
 				applied = true
 				break
 			}
 		}
 		if !applied {
-			reservedNotAppliedInstances = append(reservedNotAppliedInstances, inst)
+			reservedNotAppliedInstances = append(reservedNotAppliedInstances, instance)
 		}
 	}
 
-	for _, reserved := range flattenReservedInstances {
+	for _, flattenReserved := range flattenReservedInstances {
 		related := false
 		for _, relatedReserved := range relatedReservedInstances {
-			if reserved.Index == relatedReserved.Index {
+			if flattenReserved.Index == relatedReserved.Index {
 				related = true
 				break
 			}
 		}
 		if !related {
-			unusedReservedInstances = append(unusedReservedInstances, reserved)
+			unusedReservedInstances = append(unusedReservedInstances, flattenReserved)
 		}
 	}
 
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
 	fmt.Println("----------------------------------------------")
-	for _, inst := range reservedNotAppliedInstances {
-		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *inst.InstanceId, *inst.Placement.AvailabilityZone, *inst.InstanceType)
+	for _, instance := range reservedNotAppliedInstances {
+		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *instance.InstanceId, *instance.Placement.AvailabilityZone, *instance.InstanceType)
 	}
 	fmt.Println("")
 
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v Reserved Instances which are not related running EC2 instances\n", len(unusedReservedInstances))
 	fmt.Println("----------------------------------------------")
-	for _, inst := range unusedReservedInstances {
-		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *inst.Reserved.ReservedInstancesId, *inst.Reserved.AvailabilityZone, *inst.Reserved.InstanceType)
+	for _, flattenReserved := range unusedReservedInstances {
+		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *flattenReserved.Reserved.ReservedInstancesId, *flattenReserved.Reserved.AvailabilityZone, *flattenReserved.Reserved.InstanceType)
 	}
 	fmt.Println("")
 }
@@ -158,16 +158,16 @@ func EC2InstancesAndReservedInstances() ([]*ec2.Instance, []*ec2.ReservedInstanc
 
 func flattenReservedInstances(reservedInstances []*ec2.ReservedInstances) []*FlattenReservedInstances {
 	flattenReserved := make([]*FlattenReservedInstances, 0)
-	instances := make([]*ec2.ReservedInstances, 0)
-	for _, inst := range reservedInstances {
-		for i := 0; i < int(*inst.InstanceCount); i++ {
-			instances = append(instances, inst)
+	duplicateReservedInstances := make([]*ec2.ReservedInstances, 0)
+	for _, reserved := range reservedInstances {
+		for i := 0; i < int(*reserved.InstanceCount); i++ {
+			duplicateReservedInstances = append(duplicateReservedInstances, reserved)
 		}
 	}
 
-	for i, inst := range instances {
+	for i, reserved := range duplicateReservedInstances {
 		flatten := &FlattenReservedInstances{
-			Reserved: inst,
+			Reserved: reserved,
 			Index:    i,
 		}
 		flattenReserved = append(flattenReserved, flatten)
