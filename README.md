@@ -68,3 +68,9 @@ There are 2 active Reserved instances
 
 
 ```
+
+
+## Author
+
+[Akira Fukushima](https://github.com/h3poteto)
+
