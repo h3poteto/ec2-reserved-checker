@@ -1,9 +1,48 @@
 # ec2-reserved-checker
 
-For example: 
+`ec2-reserved-checker` is a management tool for AWS EC2 Reserved Instances. It show running EC2 Instances which is not applied Resereved Instance, and it show active Reserved Instances which does not relate any running EC2 Instances.
+
+## Install
+Get binary from github:
 
 ```
-$ gom run main.go
+$ wget https://github.com/h3poteto/ec2-reserved-checker/releases/download/v0.1.0/ec2_reserved_checker_0.1.0_darwin_adm64.zip
+```
+
+or, build. It requires Go1.6 and [gom](https://github.com/mattn/gom).
+
+```
+$ git clone git@github.com:h3poteto/ec2-reserved-checker.git
+$ cd ec2-reserved_checker
+$ gom install
+$ gom build -o ec2-reserved-checker main.go
+```
+
+## Setup
+It use [aws-sdk-go](https://github.com/aws/aws-sdk-go), so please set enviroments for AWS:
+
+```
+$ export AWS_ACCESS_KEY_ID=AKID1234567890
+$ export AWS_SECRET_ACCESS_KEY=MY-SECRET-KEY
+```
+
+or, ensure that you've configured credentials in `~/.aws/credentials` :
+
+```
+[default]
+aws_access_key_id = AKID1234567890
+aws_secret_access_key = MY-SECRET-KEY
+```
+
+And, `ec2-reserved-checker` requires `AWS_REGION` to search EC2 Instances in your AWS Account.
+```
+$ export AWS_REGION=ap-northeast-1
+```
+
+## Example
+
+```
+$ ./ec2-reserved-checker
 ----------------------------------------------
  There are 4 running EC2 instances
 ----------------------------------------------
