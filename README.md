@@ -14,7 +14,7 @@ or, build. It requires Go1.6 and [gom](https://github.com/mattn/gom).
 ```
 $ git clone git@github.com:h3poteto/ec2-reserved-checker.git
 $ cd ec2-reserved_checker
-$ export GO15VENDOREXPERIMENT=0  # It is bug in gom: https://github.com/mattn/gom/issues/80
+$ export GO15VENDOREXPERIMENT=0  # It is required in gom, when we use go1.6: https://github.com/mattn/gom/issues/80
 $ gom install
 $ gom build -o ec2-reserved-checker main.go
 ```
