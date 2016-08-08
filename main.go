@@ -55,34 +55,12 @@ func main() {
 
 	// We need ondemand instances which are not applied reserved,
 	// and reserved instances which are not related running EC2 instances.
-	reservedNotAppliedInstances := make([]*ec2.Instance, 0)
-	unusedReservedInstances := make([]*FlattenReservedInstances, 0)
-
-	for _, instance := range runningInstances {
-		applied := false
-		for _, appliedInst := range reservedAppliedInstances {
-			if *instance.InstanceId == *appliedInst.InstanceId {
-				applied = true
-				break
-			}
-		}
-		if !applied {
-			reservedNotAppliedInstances = append(reservedNotAppliedInstances, instance)
-		}
+	reservedNotAppliedInstances, err := notAppliedInstances(runningInstances, reservedAppliedInstances)
+	if err != nil {
+		panic(err)
 	}
 
-	for _, flattenReserved := range flattenReservedInstances {
-		related := false
-		for _, relatedReserved := range relatedReservedInstances {
-			if flattenReserved.Index == relatedReserved.Index {
-				related = true
-				break
-			}
-		}
-		if !related {
-			unusedReservedInstances = append(unusedReservedInstances, flattenReserved)
-		}
-	}
+	unusedReservedInstances, err := unusedReservedInstances(flattenReservedInstances, relatedReservedInstances)
 
 	fmt.Println("----------------------------------------------")
 	fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
@@ -99,6 +77,44 @@ func main() {
 		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *flattenReserved.Reserved.ReservedInstancesId, *flattenReserved.Reserved.AvailabilityZone, *flattenReserved.Reserved.InstanceType)
 	}
 	fmt.Println("")
+}
+
+func notAppliedInstances(runningInstances []*ec2.Instance, reservedAppliedInstances []*ec2.Instance) ([]*ec2.Instance, error) {
+	// We need ondemand instances which are not applied reserved,
+	// and reserved instances which are not related running EC2 instances.
+	reservedNotAppliedInstances := make([]*ec2.Instance, 0)
+
+	for _, instance := range runningInstances {
+		applied := false
+		for _, appliedInst := range reservedAppliedInstances {
+			if *instance.InstanceId == *appliedInst.InstanceId {
+				applied = true
+				break
+			}
+		}
+		if !applied {
+			reservedNotAppliedInstances = append(reservedNotAppliedInstances, instance)
+		}
+	}
+	return reservedNotAppliedInstances, nil
+}
+
+func unusedReservedInstances(flattenReservedInstances []*FlattenReservedInstances, relatedReservedInstances []*FlattenReservedInstances) ([]*FlattenReservedInstances, error) {
+	unusedReservedInstances := make([]*FlattenReservedInstances, 0)
+
+	for _, flattenReserved := range flattenReservedInstances {
+		related := false
+		for _, relatedReserved := range relatedReservedInstances {
+			if flattenReserved.Index == relatedReserved.Index {
+				related = true
+				break
+			}
+		}
+		if !related {
+			unusedReservedInstances = append(unusedReservedInstances, flattenReserved)
+		}
+	}
+	return unusedReservedInstances, nil
 }
 
 // EC2InstancesAndReservedInstances get running EC2 Instances and active Reserved Instances
