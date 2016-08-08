@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -16,27 +17,15 @@ type FlattenReservedInstances struct {
 
 func main() {
 
+	instanceInfo := flag.Bool("info", true, "Show all instances information")
+	notappliedInfo := flag.Bool("notapplied", true, "Show not applied ec2 instances information")
+	unusedInfo := flag.Bool("unused", true, "Show unused reserved instances information")
+	flag.Parse()
+
 	runningInstances, reservedInstances, err := EC2InstancesAndReservedInstances()
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println("----------------------------------------------")
-	fmt.Printf(" There are %v running EC2 instances\n", len(runningInstances))
-	fmt.Println("----------------------------------------------")
-
-	for _, instance := range runningInstances {
-		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *instance.InstanceId, *instance.Placement.AvailabilityZone, *instance.InstanceType)
-	}
-	fmt.Println("")
-
-	fmt.Println("----------------------------------------------")
-	fmt.Printf("There are %v active Reserved instances\n", len(reservedInstances))
-	fmt.Println("----------------------------------------------")
-	for _, reserved := range reservedInstances {
-		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: %v\n", *reserved.ReservedInstancesId, *reserved.AvailabilityZone, *reserved.InstanceType, *reserved.InstanceCount)
-	}
-	fmt.Println("")
 
 	reservedAppliedInstances := make([]*ec2.Instance, 0)
 	relatedReservedInstances := make([]*FlattenReservedInstances, 0)
@@ -61,22 +50,49 @@ func main() {
 	}
 
 	unusedReservedInstances, err := unusedReservedInstances(flattenReservedInstances, relatedReservedInstances)
-
-	fmt.Println("----------------------------------------------")
-	fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
-	fmt.Println("----------------------------------------------")
-	for _, instance := range reservedNotAppliedInstances {
-		fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *instance.InstanceId, *instance.Placement.AvailabilityZone, *instance.InstanceType)
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println("")
 
-	fmt.Println("----------------------------------------------")
-	fmt.Printf(" There are %v Reserved Instances which are not related running EC2 instances\n", len(unusedReservedInstances))
-	fmt.Println("----------------------------------------------")
-	for _, flattenReserved := range unusedReservedInstances {
-		fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *flattenReserved.Reserved.ReservedInstancesId, *flattenReserved.Reserved.AvailabilityZone, *flattenReserved.Reserved.InstanceType)
+	if *instanceInfo == true {
+		// Print results
+		fmt.Println("----------------------------------------------")
+		fmt.Printf(" There are %v running EC2 instances\n", len(runningInstances))
+		fmt.Println("----------------------------------------------")
+
+		for _, instance := range runningInstances {
+			fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *instance.InstanceId, *instance.Placement.AvailabilityZone, *instance.InstanceType)
+		}
+		fmt.Println("")
+
+		fmt.Println("----------------------------------------------")
+		fmt.Printf("There are %v active Reserved instances\n", len(reservedInstances))
+		fmt.Println("----------------------------------------------")
+		for _, reserved := range reservedInstances {
+			fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: %v\n", *reserved.ReservedInstancesId, *reserved.AvailabilityZone, *reserved.InstanceType, *reserved.InstanceCount)
+		}
+		fmt.Println("")
 	}
-	fmt.Println("")
+
+	if *notappliedInfo == true {
+		fmt.Println("----------------------------------------------")
+		fmt.Printf(" There are %v EC2 Instances which are not applied reserved\n", len(reservedNotAppliedInstances))
+		fmt.Println("----------------------------------------------")
+		for _, instance := range reservedNotAppliedInstances {
+			fmt.Printf("  EC2 Instance ID: %v, AvailabilityZone: %v, InstanceType: %v\n", *instance.InstanceId, *instance.Placement.AvailabilityZone, *instance.InstanceType)
+		}
+		fmt.Println("")
+	}
+
+	if *unusedInfo == true {
+		fmt.Println("----------------------------------------------")
+		fmt.Printf(" There are %v Reserved Instances which are not related running EC2 instances\n", len(unusedReservedInstances))
+		fmt.Println("----------------------------------------------")
+		for _, flattenReserved := range unusedReservedInstances {
+			fmt.Printf("  Reserved Instance ID: %v, AvailabilityZone: %v, InstanceType: %v, number: 1\n", *flattenReserved.Reserved.ReservedInstancesId, *flattenReserved.Reserved.AvailabilityZone, *flattenReserved.Reserved.InstanceType)
+		}
+		fmt.Println("")
+	}
 }
 
 func notAppliedInstances(runningInstances []*ec2.Instance, reservedAppliedInstances []*ec2.Instance) ([]*ec2.Instance, error) {
