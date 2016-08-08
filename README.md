@@ -48,7 +48,7 @@ $ ./ec2-reserved-checker
  There are 4 running EC2 instances
 ----------------------------------------------
   EC2 Instance ID: i-0a8e47ff, AvailabilityZone: ap-northeast-1c, InstanceType: t2.micro
-  EC2 Instance ID: i-d6811259, AvailabilityZone: ap-northeast-1c, InstanceType: t2.micro
+  EC2 Instance ID: i-0c66cd221e4c87f20, AvailabilityZone: ap-northeast-1c, InstanceType: t2.micro
   EC2 Instance ID: i-be8a454b, AvailabilityZone: ap-northeast-1c, InstanceType: t2.micro
   EC2 Instance ID: i-fd5e1a58, AvailabilityZone: ap-northeast-1a, InstanceType: t2.micro
 
@@ -67,6 +67,25 @@ There are 2 active Reserved instances
  There are 0 Reserved Instances which are not related running EC2 instances
 ----------------------------------------------
 
+
+```
+
+### Options 
+```
+$ ./ec2-reserved-checker -h
+Usage of ./ec2-reserved-checker:
+  -info
+    	Show all instances information (default true)
+  -notapplied
+    	Show not applied ec2 instances information (default true)
+  -unused
+    	Show unused reserved instances information (default true)
+
+$ ./ec2-reserved-checker -info=false -unused=false
+----------------------------------------------
+ There are 1 EC2 Instances which are not applied reserved
+----------------------------------------------
+  EC2 Instance ID: i-fd5e1a58, AvailabilityZone: ap-northeast-1a, InstanceType: t2.micro
 
 ```
 
