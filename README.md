@@ -40,6 +40,27 @@ And, `ec2-reserved-checker` requires `AWS_REGION` to search EC2 Instances in you
 $ export AWS_REGION=ap-northeast-1
 ```
 
+### Required IAM permissions
+The user/role used should have `ec2:DescribeInstances` and `ec2:DescribeReservedInstances`
+permissions. So you should configure one policy like:
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeInstances",
+                "ec2:DescribeReservedInstances"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+```
+
 ## Example
 
 ```
